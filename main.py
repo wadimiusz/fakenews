@@ -24,11 +24,14 @@ def main():
         title2url = dict()
     
     data = pd.read_csv("./data/fake_or_real_news.csv", index_col=0)
-    key = input('Your key:')
-    cx = input('Your cx:')
+#     key = input('Your key:')
+#     cx = input('Your cx:')
+    key = "AIzaSyCQN6Zl9aIi1pNf6seBOrw1X50PxoYQV2Q"
+    cx = "009131931706956872601:yjwrnbki4sp"
     titles_to_annotate = [title for title in data.title if title not in title2url]
     bar = tqdm(titles_to_annotate)
     fails = 0
+    stopwords = ['kaggle', 'notebook', 'ipynb', 'github', 'fake', 'detection']
     for title in bar:
         query = '"{}"'.format(title)
         res = google(key, cx, query)
@@ -38,8 +41,10 @@ def main():
             continue
         for item in res['items']:
             if 'link' in item:
-                title2url[title] = item['link']
-                break
+                link = item['link']
+                if all(word not in link for word in stopwords):
+                    title2url[title] = item['link']
+                    break
         with open("title2url.pkl", "wb") as f:
             pickle.dump(title2url, f)
         
