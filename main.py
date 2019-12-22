@@ -12,7 +12,7 @@ URL = "https://www.googleapis.com/customsearch/v1"
 
 
 def google(key, cx, query):
-    PARAMS = {'key':'AIzaSyCQN6Zl9aIi1pNf6seBOrw1X50PxoYQV2Q', 'cx':'009131931706956872601:yjwrnbki4sp', 'q':query}
+    PARAMS = {'key': key, 'cx': cx, 'q':query}
     r = requests.get(url = URL, params = PARAMS) 
     return r.json()
 
@@ -24,10 +24,8 @@ def main():
         title2url = dict()
     
     data = pd.read_csv("./data/fake_or_real_news.csv", index_col=0)
-#     key = input('Your key:')
-#     cx = input('Your cx:')
-    key = "AIzaSyCQN6Zl9aIi1pNf6seBOrw1X50PxoYQV2Q"
-    cx = "009131931706956872601:yjwrnbki4sp"
+    key = input('Your key:')
+    cx = input('Your cx:')
     titles_to_annotate = [title for title in data.title if title not in title2url]
     bar = tqdm(titles_to_annotate)
     fails = 0
