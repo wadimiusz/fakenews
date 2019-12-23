@@ -7,6 +7,10 @@ import seaborn as sns
 from urllib.parse import quote
 import time
 import os
+import requests
+from bs4 import BeautifulSoup
+
+
 
 URL = "https://www.googleapis.com/customsearch/v1"
 
@@ -27,19 +31,15 @@ def dataprocessing(data):
     data.reset_index(drop=True, inplace=True)
     return data
 
-def main():
+def load_urls(data):
     if os.path.exists('title2url.pkl'):
         with open('title2url.pkl', 'rb') as f:
             title2url = pickle.load(f)
     else:
         title2url = dict()
-    
-    data = pd.read_csv("./data/fake_or_real_news.csv", index_col=0)
-    #key = input('Your key:')
-    #cx = input('Your cx:')
+        
     key = os.environ.get("PY_GOOGLE_KEY")
     cx = os.environ.get("PY_GOOGLE_CX")
-    data = dataprocessing(data)
     titles_to_annotate = [title for title in data.title if title not in title2url]
     bar = tqdm(titles_to_annotate)
     fails = 0
@@ -61,6 +61,42 @@ def main():
             pickle.dump(title2url, f)
         time.sleep(1.1)
     print("so far so good")
+
+def load_links(title2url):
+    if os.path.exists('title2links.pkl'):
+        with open('title2links.pkl', 'rb') as f:
+            title2links = pickle.load(f)
+    else:
+        title2links = dict()
+    
+    pb = tqdm([title for title in title2url if title not in title2links])
+    errors = 0
+    for title in pb:
+        res = requests.get(title2url[title])
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text)
+            links = [x.get("href") for x in soup.find_all("a")]
+            links = [x for x in links if x is not None and len(x) > 2]
+            title2links[title] = links
+        else:
+            errors += 1
+            pb.set_postfix(errors=errors)
+        with open("title2url.pkl", "wb") as f:
+            pickle.dump(title2url, f)
+        time.sleep(1)
+    
+def main():
+
+    
+    data = pd.read_csv("./data/fake_or_real_news.csv", index_col=0)
+    #key = input('Your key:')
+    #cx = input('Your cx:')
+    data = dataprocessing(data)
+    # load_urls(data)
+    with open("title2url.pkl", "rb") as f:
+        title2url = pickle.load(f)
+    
+    load_links(title2url)
 
 
 if __name__ == '__main__':
