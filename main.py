@@ -10,7 +10,12 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import networkx as nx
-
+from urllib.parse import urlparse
+from itertools import combinations
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+import numpy as np
 
 
 URL = "https://www.googleapis.com/customsearch/v1"
@@ -100,13 +105,42 @@ def main():
     #key = input('Your key:')
     #cx = input('Your cx:')
     data = dataprocessing(data)
-    load_urls(data)
+    # load_urls(data)
     with open("title2url.pkl", "rb") as f:
         title2url = pickle.load(f)
-        network = load_network(title2url)
-   #load_links(title2url)
 
+    #load_links(title2url)
+    title2urls_trunc = {key: [urlparse(x).netloc for x in value] for key, value in title2url.items()}
+    G = nx.Graph()
+    for sites in title2urls_trunc.values():
+        G.add_edges_from(combinations(sites, 2))
 
+    adjacency_matrix = nx.adjacency_matrix(G).todense()
+    
+    X, y = list(), list()
+    nodes = list(G.nodes())
+    
+    for title, label in tqdm(zip(data.title, data.label)):
+        if title not in title2url:
+            continue
+            
+        adj_urls = title2urls_trunc[title]
+        ids = [nodes.index(url) for url in adj_urls if url in nodes]
+        if len(ids) == 0:
+            continue
+        vector = adjacency_matrix[ids].mean(0)
+        X.append(vector)
+        real = int(label == "REAL")
+        y.append(real)
+    
+    X = np.vstack(X)
+    print(X)
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    print("Fitting a logistic regression")
+    clf = LogisticRegression().fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    print(classification_report(y_test, y_pred))
+        
 
 if __name__ == '__main__':
     main()
