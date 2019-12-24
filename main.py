@@ -9,6 +9,7 @@ import time
 import os
 import requests
 from bs4 import BeautifulSoup
+import networkx as nx
 
 
 
@@ -51,12 +52,13 @@ def load_urls(data):
             fails += 1
             bar.set_postfix(fails=fails)
             continue
+        itemlist = []
         for item in res['items']:
             if 'link' in item:
                 link = item['link']
                 if all(word not in link for word in stopwords):
-                    title2url[title] = item['link']
-                    break
+                    itemlist.append(item['link'])
+        title2url[title] = itemlist
         with open("title2url.pkl", "wb") as f:
             pickle.dump(title2url, f)
         time.sleep(1.1)
@@ -83,8 +85,14 @@ def load_links(title2url):
             pb.set_postfix(errors=errors)
         with open("title2url.pkl", "wb") as f:
             pickle.dump(title2url, f)
-        time.sleep(1)
-    
+        time.sleep(1.1)
+
+
+def load_network(title2url):
+    g = nx.DiGraph(title2url)
+    return g
+
+
 def main():
 
     
@@ -92,11 +100,12 @@ def main():
     #key = input('Your key:')
     #cx = input('Your cx:')
     data = dataprocessing(data)
-    # load_urls(data)
+    load_urls(data)
     with open("title2url.pkl", "rb") as f:
         title2url = pickle.load(f)
-    
-    load_links(title2url)
+        network = load_network(title2url)
+   #load_links(title2url)
+
 
 
 if __name__ == '__main__':
