@@ -235,6 +235,12 @@ def main():
     y_pred = clf.predict(X_test)
     print(classification_report(y_test, y_pred))
     print(evalBinaryClassifier(clf, X_test, y_test))
+    coefs = clf.coef_[0]
+    sorted_nodes = [nodes[i] for i in coefs.argsort()]
+    print("Top fake media:")
+    print(*sorted_nodes[:5], sep="\n")
+    print("Top truthful media:")
+    print(*sorted_nodes[::-1][:5], sep="\n")
     print("escape")
         
 
